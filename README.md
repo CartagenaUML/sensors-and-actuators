@@ -4,7 +4,7 @@
 
 **Aim**:
 
-To design a robot car which can drive itself surrounding an object such as a trash can or one gallon milk bottle 
+To design a robot car which can drive itself surrounding an object such as a trash can or one gallon milk bottle with an ultrasonic distance sensor and audio sensor
 
 **Steps**
 

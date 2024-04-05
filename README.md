@@ -57,8 +57,10 @@ https://www.elegoo.com/download/
 3. For EECE.5520 students, you need to install “arduinoFFT” library through the IDE’s library
 manager tool.
 
-4. For EECE.5520 students, you need to refer to the robot car assembly guide to build the twowheel
+4. For EECE.5520 students, you need to refer to the robot car assembly guide to build the two-wheel
 robot car: https://github.com/ACANETS/eece-4520-5520-
 labs/blob/2039441de8a069a14cadbb58f175f142d48f87c0/lab3/assembly%20guide.md
 
-5. Hugging bot demo video: https://youtu.be/7CNUAesYvLU
+5. Add FFT library manually from Arduino IDE Manage libraries and add ArduinoFFT by Enrique Condes
+   
+6. Hugging bot demo video: https://youtu.be/7CNUAesYvLU

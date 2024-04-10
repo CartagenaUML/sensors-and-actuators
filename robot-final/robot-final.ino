@@ -9,10 +9,15 @@ This code will combine the dc motor code and fft code we've been working on
 to make a two wheeled robot move around a trash can
 and make the robot stop when it detects a certain peak frequency
 and make the robot start when it detects another specific peak frequency
+
+Taken from arduinoFFT github (code) written by Enrique Condes
 *********************************************************************************************
 *********************************************************************************************/
+// FFT library
+#include "arduinoFFT.h"
+
 // including to use object detecting sensor
-#include "SR04.h"
+//#include "SR04.h"
 // Goes to control of motor connected to robot's front facing left wheel
 #define ENABLE_LEFT_WHEEL 5
 // DIR_A LOW and DIR_B HIGH makes wheel move forward, use opposite logic to move backward
@@ -27,7 +32,30 @@ and make the robot start when it detects another specific peak frequency
 // used for object detecting and measuring distance from object
 #define TRIG_PIN 12
 #define ECHO_PIN 11
-SR04 sr04 = SR04(ECHO_PIN,TRIG_PIN);
+//SR04 sr04 = SR04(ECHO_PIN,TRIG_PIN);
+
+// FFT define
+#define CHANNEL A0
+const uint16_t samples = 64; //This value MUST ALWAYS be a power of 2
+const double samplingFrequency = 880; //Hz, must be less than 10000 due to ADC // twice of ths signal frequency
+unsigned int sampling_period_us;
+unsigned long microseconds;
+
+/*
+These are the input and output vectors
+Input vectors receive computed results from FFT
+*/
+double vReal[samples];
+double vImag[samples];
+
+/* Create FFT object */
+ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, samples, samplingFrequency);
+
+#define SCL_INDEX 0x00
+#define SCL_TIME 0x01
+#define SCL_FREQUENCY 0x02
+#define SCL_PLOT 0x03
+
 
 long a;
 int i;
@@ -41,6 +69,13 @@ void setup() {
   pinMode(DIR_C, OUTPUT);
   pinMode(DIR_D, OUTPUT);
   Serial.begin(9600);
+
+  // FFT code
+  sampling_period_us = round(1000000*(1.0/samplingFrequency));
+  Serial.begin(115200);
+  while(!Serial);
+  Serial.println("Ready");
+  
 }
 
 // both motors 100% duty cycle
@@ -226,11 +261,39 @@ void car_turn_right (int left_duty_cycle, int right_duty_cycle) {
 }
 
 void distance_measurement() {
-  a=sr04.Distance();
+//  a=sr04.Distance();
   Serial.print(a);
   Serial.println("cm");
   delay(1000);
   }
+
+// FFT printVector
+void PrintVector(double *vData, uint16_t bufferSize, uint8_t scaleType)
+{
+  for (uint16_t i = 0; i < bufferSize; i++)
+  {
+    double abscissa;
+    /* Print abscissa value */
+    switch (scaleType)
+    {
+      case SCL_INDEX:
+        abscissa = (i * 1.0);
+  break;
+      case SCL_TIME:
+        abscissa = ((i * 1.0) / samplingFrequency);
+  break;
+      case SCL_FREQUENCY:
+        abscissa = ((i * 1.0 * samplingFrequency) / samples);
+  break;
+    }
+    Serial.print(abscissa, 6);
+    if(scaleType==SCL_FREQUENCY)
+      Serial.print("Hz");
+    Serial.print(" ");
+    Serial.println(vData[i], 4);
+  }
+  Serial.println();
+}
 
 void loop() {
 
@@ -239,9 +302,41 @@ void loop() {
 // detect two specific frequencies to start and stop car
 // detect certain distances to finely adjust wheel speeds to stay within a range of object distance
 
+  // FFT code below for sampling and computing
+  /*SAMPLING*/
+  microseconds = micros();
+  for(int i=0; i<samples; i++)
+  {
+      vReal[i] = analogRead(CHANNEL);
+      vImag[i] = 0;
+      while(micros() - microseconds < sampling_period_us){
+        //empty loop
+      }
+      microseconds += sampling_period_us;
+  }
+  /* Print the results of the sampling according to time */
+  Serial.println("Data:");
+  PrintVector(vReal, samples, SCL_TIME);
+  FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);  /* Weigh data */
+  Serial.println("Weighed data:");
+  PrintVector(vReal, samples, SCL_TIME);
+  FFT.compute(FFTDirection::Forward); /* Compute FFT */
+  Serial.println("Computed Real values:");
+  PrintVector(vReal, samples, SCL_INDEX);
+  Serial.println("Computed Imaginary values:");
+  PrintVector(vImag, samples, SCL_INDEX);
+  FFT.complexToMagnitude(); /* Compute magnitudes */
+  Serial.println("Computed magnitudes:");
+  PrintVector(vReal, (samples >> 1), SCL_FREQUENCY);
+  double x = FFT.majorPeak();
+  Serial.println(x, 6); //Print out what frequency is the most dominant.
+  //while(1); /* Run Once */
+  delay(1000); /* Repeat after delay */
+  
 }
+
+
 
 
  
    
-

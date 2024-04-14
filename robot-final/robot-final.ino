@@ -35,7 +35,7 @@ Taken from arduinoFFT github (code) written by Enrique Condes
 SR04 sr04 = SR04(ECHO_PIN,TRIG_PIN);
 
 // FFT define
-#define CHANNEL A0
+#define CHANNEL A7
 const uint16_t samples = 64; //This value MUST ALWAYS be a power of 2
 const double samplingFrequency = 880; //Hz, must be less than 10000 due to ADC // twice of ths signal frequency
 unsigned int sampling_period_us;
@@ -49,7 +49,7 @@ double vReal[samples];
 double vImag[samples];
 
 /* Create FFT object */
-ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, samples, samplingFrequency);
+arduinoFFT FFT = arduinoFFT(vReal, vImag, samples, samplingFrequency);
 
 #define SCL_INDEX 0x00
 #define SCL_TIME 0x01
@@ -59,7 +59,10 @@ ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, samples, samplingFrequ
 
 long a;
 int i;
- 
+int noteFreq;
+bool start = true;
+bool stop = false;
+
 void setup() {
   //---set pin direction
   pinMode(ENABLE_LEFT_WHEEL, OUTPUT);
@@ -70,12 +73,65 @@ void setup() {
   pinMode(DIR_D, OUTPUT);
 
   // FFT code
-  sampling_period_us = round(1000000*(1.0/samplingFrequency));
+  init_Sound_Sensor();
   Serial.begin(115200);
   while(!Serial);
   Serial.println("Ready");
   
 }
+
+void init_Sound_Sensor() //Sound sampling done using FFT
+{
+   sampling_period_us = round(1000000*(1.0/samplingFrequency));  //sampling_period_us = round(1000000*(1.0/samplingFrequency));
+}
+
+int sound_sampling_fft()
+{
+   /*SAMPLING*/
+  microseconds = micros();
+  for(int i=0; i<samples; i++)
+  {
+      vReal[i] = analogRead(CHANNEL);
+      vImag[i] = 0;
+      while(micros() - microseconds < sampling_period_us){
+        //empty loop
+      }
+      microseconds += sampling_period_us;
+  }
+  PrintVector(vReal, samples, SCL_TIME);/*  the results of the sampling according to time */
+  FFT.Windowing(FFTWindow::Hamming, FFTDirection::Forward);	/* Weigh data */
+  PrintVector(vReal, samples, SCL_TIME);
+  FFT.Compute(FFTDirection::Forward); /* Compute FFT */
+  PrintVector(vReal, samples, SCL_INDEX);
+  PrintVector(vImag, samples, SCL_INDEX);
+  FFT.ComplexToMagnitude(); /* Compute magnitudes */
+  PrintVector(vReal, (samples >> 1), SCL_FREQUENCY);
+  double x = FFT.MajorPeak();
+  Serial.println(x, 6); //Print out what frequency is the most dominant.
+ 
+  //  Detect sound is 440hz and would be acceptable +/- 2%
+  if((x >= 431.2) && (x <= 448.8))    
+  {
+    noteFreq = 440;
+    start = false;
+    stop = true;
+    return noteFreq; // 440Hz is the stopping frequency
+  }
+  else if ((x >= 257) && (x < 267))
+  {
+    noteFreq = 261;
+    start = true;
+    stop = false;
+    return noteFreq; // 261 is the starting frequency
+  }
+  else {
+    noteFreq = 1;
+    return noteFreq;
+  }
+
+}
+
+bool sound_status;
 
 // both motors 100% duty cycle
 void motor_duty_cycle_100() {
@@ -319,6 +375,7 @@ void loop() {
   nextState = 1;
   long distance;
   distance = sr04.Distance();
+  stop = false;
   while (1) {
     currentState = nextState;
     switch (currentState){
@@ -326,7 +383,6 @@ void loop() {
         // TODO
         // add a way to start robot with C4 with if statement checking a flag and changing nextState
         car_stop();
-        delay(1000);
         break;
       case 1: // come here to start the car, in case of note A4
         car_forward_tilt(255, 255);
@@ -339,63 +395,37 @@ void loop() {
         break;
       case 4: // come here if way too close to object
         //car_stop();
-        car_turn_right(150, 0);
+        car_turn_right(178, 0);
         //car_forward_tilt(255,150);
         break;
       case 5: // come here if way too far from object
         //car_stop();
-        car_turn_left(0, 150);
+        car_turn_left(0, 178);
         //car_forward_tilt(255, 255);
         break;
     }
-  distance = sr04.Distance(); // distance measure in cm
-  if ((distance >=  10) && (distance < 50)) { // getting a little far from object
-    nextState = 3;
-  }
-  else if ((distance <= 5) && (distance > 2)) { // getting a little close to object
-    nextState = 2;
-  }
-  else if (distance <= 2) { // got way too close to object
-    nextState = 4;
-  }
-  else if (distance >= 50) { // got way too far from object
-    nextState = 5;
-  }
-  else { // at a reasonable distance from object, continue at forward pace
+    distance = sr04.Distance(); // distance measure in cm
+    if ((distance >=  10) && (distance < 50)) { // getting a little far from object
+      nextState = 3;
+    }
+    else if ((distance <= 5) && (distance > 2)) { // getting a little close to object
+      nextState = 2;
+    }
+    else if (distance <= 2) { // got way too close to object
+      nextState = 4;
+    }
+    else if (distance >= 50) { // got way too far from object
+      nextState = 5;
+    }
+    else { // at a reasonable distance from object, continue at forward pace
     nextState = 1;
-  }
+    }
+    sound_sampling_fft();
+    if (stop == true) {
+      nextState = 0;
+    }
 
   }
-  // FFT code below for sampling and computing
-  /*SAMPLING*/
-  microseconds = micros();
-  for(int i=0; i<samples; i++)
-  {
-      vReal[i] = analogRead(CHANNEL);
-      vImag[i] = 0;
-      while(micros() - microseconds < sampling_period_us){
-        //empty loop
-      }
-      microseconds += sampling_period_us;
-  }
-  /* Print the results of the sampling according to time */
-  Serial.println("Data:");
-  PrintVector(vReal, samples, SCL_TIME);
-  FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);  /* Weigh data */
-  Serial.println("Weighed data:");
-  PrintVector(vReal, samples, SCL_TIME);
-  FFT.compute(FFTDirection::Forward); /* Compute FFT */
-  Serial.println("Computed Real values:");
-  PrintVector(vReal, samples, SCL_INDEX);
-  Serial.println("Computed Imaginary values:");
-  PrintVector(vImag, samples, SCL_INDEX);
-  FFT.complexToMagnitude(); /* Compute magnitudes */
-  Serial.println("Computed magnitudes:");
-  PrintVector(vReal, (samples >> 1), SCL_FREQUENCY);
-  double x = FFT.majorPeak();
-  Serial.println(x, 6); //Print out what frequency is the most dominant.
-  //while(1); /* Run Once */
-  delay(1000); /* Repeat after delay */
   
 }
 

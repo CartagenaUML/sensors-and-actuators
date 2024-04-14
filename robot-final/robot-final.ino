@@ -17,22 +17,22 @@ Taken from arduinoFFT github (code) written by Enrique Condes
 #include "arduinoFFT.h"
 
 // including to use object detecting sensor
-//#include "SR04.h"
+#include "SR04.h"
 // Goes to control of motor connected to robot's front facing left wheel
-#define ENABLE_LEFT_WHEEL 5
+#define ENABLE_LEFT_WHEEL 14
 // DIR_A LOW and DIR_B HIGH makes wheel move forward, use opposite logic to move backward
-#define DIR_A 3
-#define DIR_B 4
+#define DIR_A 16
+#define DIR_B 15
 // Goes to control of motor connected to robot's front facing right wheel
-#define ENABLE_RIGHT_WHEEL 8
+#define ENABLE_RIGHT_WHEEL 21
 // DIR_C LOW and DIR_D HIGH makes wheel move forward, use opposite logic to move backward
-#define DIR_C 6
-#define DIR_D 7
+#define DIR_C 20
+#define DIR_D 19
 
 // used for object detecting and measuring distance from object
 #define TRIG_PIN 12
 #define ECHO_PIN 11
-//SR04 sr04 = SR04(ECHO_PIN,TRIG_PIN);
+SR04 sr04 = SR04(ECHO_PIN,TRIG_PIN);
 
 // FFT define
 #define CHANNEL A0
@@ -68,7 +68,6 @@ void setup() {
   pinMode(DIR_B, OUTPUT);
   pinMode(DIR_C, OUTPUT);
   pinMode(DIR_D, OUTPUT);
-  Serial.begin(9600);
 
   // FFT code
   sampling_period_us = round(1000000*(1.0/samplingFrequency));
@@ -142,32 +141,32 @@ void motor_duty_cycle_75_100() {
 void wheels_forward() {
   digitalWrite(DIR_A, LOW);
   digitalWrite(DIR_B, HIGH);
-  digitalWrite(DIR_C, LOW);
-  digitalWrite(DIR_D, HIGH);
+  digitalWrite(DIR_C, HIGH);
+  digitalWrite(DIR_D, LOW);
 }
 
 // right wheel will go ccw and left wheel will cw
 void wheels_reverse() {
   digitalWrite(DIR_A, HIGH);
   digitalWrite(DIR_B, LOW);
-  digitalWrite(DIR_C, HIGH);
-  digitalWrite(DIR_D, LOW);
+  digitalWrite(DIR_C, LOW);
+  digitalWrite(DIR_D, HIGH);
 }
 
 // both wheels will go cw
 void wheels_clockwise() {
   digitalWrite(DIR_A, HIGH);
   digitalWrite(DIR_B, LOW);
-  digitalWrite(DIR_C, LOW);
-  digitalWrite(DIR_D, HIGH);
+  digitalWrite(DIR_C, HIGH);
+  digitalWrite(DIR_D, LOW);
 }
 
 // both wheels will go ccw
 void wheels_counter_clockwise() {
   digitalWrite(DIR_A, LOW);
   digitalWrite(DIR_B, HIGH);
-  digitalWrite(DIR_C, HIGH);
-  digitalWrite(DIR_D, LOW);
+  digitalWrite(DIR_C, LOW);
+  digitalWrite(DIR_D, HIGH);
 }
 
 // robot will move forward at the predetermined acceptable speeds
@@ -261,7 +260,7 @@ void car_turn_right (int left_duty_cycle, int right_duty_cycle) {
 }
 
 void distance_measurement() {
-//  a=sr04.Distance();
+  a=sr04.Distance();
   Serial.print(a);
   Serial.println("cm");
   delay(1000);
@@ -301,7 +300,72 @@ void loop() {
 // a finite state machine that constantly is checkinf distance from object and adjusting car and or individual wheel speeds to adjust and keep close to object
 // detect two specific frequencies to start and stop car
 // detect certain distances to finely adjust wheel speeds to stay within a range of object distance
+  /*****************************
+  ******************************
+  states for robot moving
+  state 0: stop
+  state 1: moving forward 75% duty cycle
+  state 2: moving left wheel duty cycle 100, right wheel duty cycle 50
+  state 3: moving left wheel duty cycle 100, right wheel duty cycle 25
+  state 4: 
+  state 5: YELLOW
+  state 6: RED
+  state 7: RED FLASHING
+  ******************************
+  *****************************/
+  // intilaize start-up
+  int currentState;
+  int nextState;
+  nextState = 1;
+  long distance;
+  distance = sr04.Distance();
+  while (1) {
+    currentState = nextState;
+    switch (currentState){
+      case 0: // come in here to stop car, in case of note C4
+        // TODO
+        // add a way to start robot with C4 with if statement checking a flag and changing nextState
+        car_stop();
+        delay(1000);
+        break;
+      case 1: // come here to start the car, in case of note A4
+        car_forward_tilt(255, 255);
+        break;
+      case 2: // come here in case getting too close to object
+        car_forward_tilt(255, 150);
+        break;
+      case 3: // come here in case getting too far from object
+        car_forward_tilt(130, 255);
+        break;
+      case 4: // come here if way too close to object
+        //car_stop();
+        car_turn_right(150, 0);
+        //car_forward_tilt(255,150);
+        break;
+      case 5: // come here if way too far from object
+        //car_stop();
+        car_turn_left(0, 150);
+        //car_forward_tilt(255, 255);
+        break;
+    }
+  distance = sr04.Distance(); // distance measure in cm
+  if ((distance >=  10) && (distance < 50)) { // getting a little far from object
+    nextState = 3;
+  }
+  else if ((distance <= 5) && (distance > 2)) { // getting a little close to object
+    nextState = 2;
+  }
+  else if (distance <= 2) { // got way too close to object
+    nextState = 4;
+  }
+  else if (distance >= 50) { // got way too far from object
+    nextState = 5;
+  }
+  else { // at a reasonable distance from object, continue at forward pace
+    nextState = 1;
+  }
 
+  }
   // FFT code below for sampling and computing
   /*SAMPLING*/
   microseconds = micros();

@@ -58,7 +58,8 @@ https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/22aa6e01-
 
 
 ![56de3c2a-28a1-4811-b00e-9fa722d2f02d - Copy](https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/bde90a2d-c796-41a1-a570-b7889441c243)
-![56de3c2a-28a1-4811-b00e-9fa722d2f02d](https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/cac81d8e-8425-43a6-b7f0-71a7e42bf36d)
+
+![RobotCar](https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/494b69c0-cd08-4065-8edd-5009fba3c103)
 
 References:
 1. Arduino IDE: https://www.arduino.cc/en/main/software

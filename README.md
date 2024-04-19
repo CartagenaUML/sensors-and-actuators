@@ -49,7 +49,11 @@ recognize the note as C4 if the peak frequency is in the range of between 257Hz 
 
 https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/22aa6e01-399a-4b6b-9962-dd4dc73d7622
 
-https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/a2e33d72-7da2-43c2-b00c-b907f291612f
+
+
+https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/0ac3c1aa-e6ac-4355-83ab-e01d82c31659
+
+
 
 
 **Images**

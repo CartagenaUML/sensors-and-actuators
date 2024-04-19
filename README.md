@@ -49,6 +49,8 @@ recognize the note as C4 if the peak frequency is in the range of between 257Hz 
 
 https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/22aa6e01-399a-4b6b-9962-dd4dc73d7622
 
+https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/a2e33d72-7da2-43c2-b00c-b907f291612f
+
 
 **Images**
 
@@ -60,6 +62,14 @@ https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/22aa6e01-
 ![56de3c2a-28a1-4811-b00e-9fa722d2f02d - Copy](https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/bde90a2d-c796-41a1-a570-b7889441c243)
 
 ![RobotCar](https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/494b69c0-cd08-4065-8edd-5009fba3c103)
+
+
+
+
+
+
+https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/c640f596-4705-4d4a-844b-34df535663c8
+
 
 References:
 1. Arduino IDE: https://www.arduino.cc/en/main/software

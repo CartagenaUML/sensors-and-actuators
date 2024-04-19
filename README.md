@@ -72,7 +72,7 @@ https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/0ac3c1aa-
 
 
 
-https://github.com/CartagenaUML/sensors-and-actuators/assets/157857568/c640f596-4705-4d4a-844b-34df535663c8
+
 
 
 References:
